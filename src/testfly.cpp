@@ -2,18 +2,28 @@
 #include"crazyflie_driver/AddCrazyflie.h"
 #include"crazyflie_driver/RemoveCrazyflie.h"
 #include"geometry_msgs/Twist.h"
+#include<string>
+#include<exception>
 
 const char* const prefix = "/test";
 
 int main(int argc, char** argv){
-    ros::init(argc, argv, "testflie");
+    ros::init(argc, argv, "testfly");
 
-    if(argc < 1){
-        ROS_INFO("usage: testfly crazyflie_uri");
+    if(argc < 2){
+        ROS_INFO("usage: testfly crazyflie_uri initial_thrust");
         return 1;
     }
 
-    const char* const crazyflieURI = argv[0];
+    const char* const crazyflieURI = argv[1];
+    int thrust = 0;
+    if(argc > 2){
+        try{
+            thrust = std::stoi(argv[2])
+        }catch(std::exception& e){
+            std::cout<<e.what()<<std::endl;
+        }
+    }
 
     ros::NodeHandle n;
 
@@ -22,10 +32,37 @@ int main(int argc, char** argv){
 
     crazyflie_driver::AddCrazyflie addReq;
     addReq.request.uri = crazyflieURI;
-    addReq.request.tf_prefix = prefix;
+    addReq.request.tf_prefix = "";
+    addReq.request.roll_trim = 0;
+    addReq.request.pitch_trim = 0;
+    addReq.request.use_ros_time = true;
+    addReq.request.enable_logging = true;
+    addReq.request.enable_logging_imu = true;
+    addReq.request.enable_logging_battery = true;
+    addReq.request.enable_logging_temperatur = true;
+    addReq.request.enable_logging_magnetic_field = true;
+    addReq.request.enable_logging_pressure = true;
 
     if(addCrazyflieClient.call(addReq)){
         ROS_INFO("connected");
+
+        ros::Publisher testflyPub = n.advertise<geometry_msgs::Twist>("/cmd_vel");
+        geometry_msgs::Twist msg;
+        msg.linear.x = 0;
+        msg.linear.y = 0;
+        msg.linear.z = thrust;
+        msg.angular.x = 0;
+        msg.angular.y = 0;
+        msg.angular.z = 0;
+
+        ros::Rate loop_rate(50);
+
+        while(ros::ok()){
+            testflyPub.publish(msg);
+            ros::spinOnce();
+            loop_rate.sleep();
+        }
+
         crazyflie_driver::RemoveCrazyflie removeReq;
         removeReq.request.uri = crazyflieURI;
         if(removeCrazyflieClient.call(removeReq)){
