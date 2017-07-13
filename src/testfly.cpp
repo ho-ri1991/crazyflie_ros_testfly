@@ -19,7 +19,7 @@ int main(int argc, char** argv){
     int thrust = 0;
     if(argc > 2){
         try{
-            thrust = std::stoi(argv[2])
+            thrust = std::stoi(argv[2]);
         }catch(std::exception& e){
             std::cout<<e.what()<<std::endl;
         }
@@ -39,14 +39,14 @@ int main(int argc, char** argv){
     addReq.request.enable_logging = true;
     addReq.request.enable_logging_imu = true;
     addReq.request.enable_logging_battery = true;
-    addReq.request.enable_logging_temperatur = true;
+    addReq.request.enable_logging_temperature = true;
     addReq.request.enable_logging_magnetic_field = true;
     addReq.request.enable_logging_pressure = true;
 
     if(addCrazyflieClient.call(addReq)){
         ROS_INFO("connected");
 
-        ros::Publisher testflyPub = n.advertise<geometry_msgs::Twist>("/cmd_vel");
+        ros::Publisher testflyPub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
         geometry_msgs::Twist msg;
         msg.linear.x = 0;
         msg.linear.y = 0;
