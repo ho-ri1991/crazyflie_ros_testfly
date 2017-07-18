@@ -4,6 +4,7 @@
 #include"geometry_msgs/Twist.h"
 #include<string>
 #include<exception>
+#include"crazyflie.hpp"
 
 const char* const prefix = "/test";
 
@@ -24,57 +25,82 @@ int main(int argc, char** argv){
             std::cout<<e.what()<<std::endl;
         }
     }
+    geometry_msgs::Twist msg;
+    msg.linear.x = 0;
+    msg.linear.y = 0;
+    msg.linear.z = thrust;
+    msg.angular.x = 0;
+    msg.angular.y = 0;
+    msg.angular.z = 0;
 
-    ros::NodeHandle n;
-
-    ros::ServiceClient addCrazyflieClient = n.serviceClient<crazyflie_driver::AddCrazyflie>("add_crazyflie");
-    ros::ServiceClient removeCrazyflieClient = n.serviceClient<crazyflie_driver::RemoveCrazyflie>("remove_crazyflie");
-
-    crazyflie_driver::AddCrazyflie addReq;
-    addReq.request.uri = crazyflieURI;
-    addReq.request.tf_prefix = "";
-    addReq.request.roll_trim = 0;
-    addReq.request.pitch_trim = 0;
-    addReq.request.use_ros_time = true;
-    addReq.request.enable_logging = true;
-    addReq.request.enable_logging_imu = true;
-    addReq.request.enable_logging_battery = true;
-    addReq.request.enable_logging_temperature = true;
-    addReq.request.enable_logging_magnetic_field = true;
-    addReq.request.enable_logging_pressure = true;
-
-    if(addCrazyflieClient.call(addReq)){
-        ROS_INFO("connected");
-
-        ros::Publisher testflyPub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
-        geometry_msgs::Twist msg;
-        msg.linear.x = 0;
-        msg.linear.y = 0;
-        msg.linear.z = thrust;
-        msg.angular.x = 0;
-        msg.angular.y = 0;
-        msg.angular.z = 0;
-
-        ros::Rate loop_rate(50);
-
-        while(ros::ok()){
-            testflyPub.publish(msg);
-            ros::spinOnce();
-            loop_rate.sleep();
-        }
-
-        crazyflie_driver::RemoveCrazyflie removeReq;
-        removeReq.request.uri = crazyflieURI;
-        if(removeCrazyflieClient.call(removeReq)){
-            ROS_INFO("disconnected");
-        }else{
-            ROS_INFO("Failed to disconnect");
-            return 1;
-        }
-    }else{
-        ROS_INFO("Failed to connect to crazyflie");
+    testfly::Crazyflie crazyflie("", crazyflieURI, msg);
+    if(crazyflie.connect()){
+        ROS_INFO("failed to connect");
         return 1;
     }
-
+    ros::Rate loop_rate(50);
+    while(ros::ok()){
+        crazyflie.work();
+        ros::spinOnce();
+        loop_rate.sleep();        
+    }
+    if(crazyflie.disconnect()){
+        ROS_INFO("failed to disconnect");
+        return 1;
+    }
     return 0;
+
+
+    // ros::NodeHandle n;
+
+    // ros::ServiceClient addCrazyflieClient = n.serviceClient<crazyflie_driver::AddCrazyflie>("add_crazyflie");
+    // ros::ServiceClient removeCrazyflieClient = n.serviceClient<crazyflie_driver::RemoveCrazyflie>("remove_crazyflie");
+
+    // crazyflie_driver::AddCrazyflie addReq;
+    // addReq.request.uri = crazyflieURI;
+    // addReq.request.tf_prefix = "";
+    // addReq.request.roll_trim = 0;
+    // addReq.request.pitch_trim = 0;
+    // addReq.request.use_ros_time = true;
+    // addReq.request.enable_logging = true;
+    // addReq.request.enable_logging_imu = true;
+    // addReq.request.enable_logging_battery = true;
+    // addReq.request.enable_logging_temperature = true;
+    // addReq.request.enable_logging_magnetic_field = true;
+    // addReq.request.enable_logging_pressure = true;
+
+    // if(addCrazyflieClient.call(addReq)){
+    //     ROS_INFO("connected");
+
+    //     ros::Publisher testflyPub = n.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
+    //     geometry_msgs::Twist msg;
+    //     msg.linear.x = 0;
+    //     msg.linear.y = 0;
+    //     msg.linear.z = thrust;
+    //     msg.angular.x = 0;
+    //     msg.angular.y = 0;
+    //     msg.angular.z = 0;
+
+    //     ros::Rate loop_rate(50);
+
+    //     while(ros::ok()){
+    //         testflyPub.publish(msg);
+    //         ros::spinOnce();
+    //         loop_rate.sleep();
+    //     }
+
+    //     crazyflie_driver::RemoveCrazyflie removeReq;
+    //     removeReq.request.uri = crazyflieURI;
+    //     if(removeCrazyflieClient.call(removeReq)){
+    //         ROS_INFO("disconnected");
+    //     }else{
+    //         ROS_INFO("Failed to disconnect");
+    //         return 1;
+    //     }
+    // }else{
+    //     ROS_INFO("Failed to connect to crazyflie");
+    //     return 1;
+    // }
+
+    // return 0;
 }
