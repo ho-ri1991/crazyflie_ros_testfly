@@ -11,8 +11,8 @@
 namespace testfly{
     class Crazyflie{
     private:
-        static constexpr char* topic_control = "/cmd_vel";
-        static constexpr int topic_control_buffer_size = 100;
+        static constexpr const char* topic_control = "/cmd_vel";
+        static constexpr int topic_control_buffer_size = 10;
     private:
         //
         const std::string prefix;
