@@ -4,6 +4,7 @@
 #include"ros/ros.h"
 #include"crazyflie_driver/AddCrazyflie.h"
 #include"crazyflie_driver/RemoveCrazyflie.h"
+#include "crazyflie_driver/LogBlock.h"
 #include"geometry_msgs/Twist.h"
 #include<string>
 #include<exception>
@@ -16,6 +17,9 @@ namespace testfly{
         static constexpr const char* topic_control = "/cmd_vel";
         static constexpr const char* topic_add_crazyflie = "add_crazyflie";
         static constexpr const char* topic_remove_crazyflie = "remove_crazyflie";
+        static constexpr const char* topic_zranger = "zranger";
+        static constexpr const char* log_variable_zranger = "range.zrange";
+        static constexpr int topic_zranger_frequency = 10;
         static constexpr const char* service_set_thrust = "set_thrust";
         static constexpr int topic_control_buffer_size = 10;
     private:
@@ -41,6 +45,7 @@ namespace testfly{
         }
     public:
         bool connect(){
+            if(isConnected)return false;
             crazyflie_driver::AddCrazyflie addReq;
             addReq.request.uri = uri;
             addReq.request.tf_prefix = prefix;
@@ -53,6 +58,11 @@ namespace testfly{
             addReq.request.enable_logging_temperature = true;
             addReq.request.enable_logging_magnetic_field = true;
             addReq.request.enable_logging_pressure = true;
+            
+            crazyflie_driver::LogBlock logBlock;
+            logBlock.topic_name = topic_zranger;
+            logBlock.frequency = topic_zranger_frequency;
+            addReq.request.log_blocks.push_back(logBlock);
 
             if(addCrazyflieClient.call(addReq)){
                 ROS_INFO("connected");
