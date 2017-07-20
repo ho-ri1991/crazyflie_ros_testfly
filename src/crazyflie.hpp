@@ -7,11 +7,16 @@
 #include"geometry_msgs/Twist.h"
 #include<string>
 #include<exception>
+#include"crazyflie_ros_testfly/SetThrust.h"
+
 
 namespace testfly{
     class Crazyflie{
-    private:
+    public:
         static constexpr const char* topic_control = "/cmd_vel";
+        static constexpr const char* topic_add_crazyflie = "add_crazyflie";
+        static constexpr const char* topic_remove_crazyflie = "remove_crazyflie";
+        static constexpr const char* service_set_thrust = "set_thrust";
         static constexpr int topic_control_buffer_size = 10;
     private:
         //
@@ -23,8 +28,17 @@ namespace testfly{
         //clients for add/remove crazyflie server
         ros::ServiceClient addCrazyflieClient;
         ros::ServiceClient removeCrazyflieClient;
+        //
+        ros::ServiceServer setThrustServive;
         //controller
         ros::Publisher controller;
+    private:
+        bool setThrust(crazyflie_ros_testfly::SetThrust::Request& req,
+                        crazyflie_ros_testfly::SetThrust::Response& res){
+            state.linear.z += req.thrust;
+            res.thrust = state.linear.z;
+            return true;
+        }
     public:
         bool connect(){
             crazyflie_driver::AddCrazyflie addReq;
@@ -63,7 +77,6 @@ namespace testfly{
                 return true;
             }            
         }
-        void setThrust(int thrust){ state.linear.z = thrust; }
     public:
         Crazyflie(const std::string& prefix_, const std::string& uri_, const geometry_msgs::Twist& initial_state)
             : prefix(prefix_)
@@ -71,8 +84,9 @@ namespace testfly{
             , state(initial_state)
             , isConnected(false)
             , nodeHandler()
-            , addCrazyflieClient(nodeHandler.serviceClient<crazyflie_driver::AddCrazyflie>("add_crazyflie"))
-            , removeCrazyflieClient(nodeHandler.serviceClient<crazyflie_driver::RemoveCrazyflie>("remove_crazyflie"))
+            , addCrazyflieClient(nodeHandler.serviceClient<crazyflie_driver::AddCrazyflie>(topic_add_crazyflie))
+            , removeCrazyflieClient(nodeHandler.serviceClient<crazyflie_driver::RemoveCrazyflie>(topic_remove_crazyflie))
+            , setThrustServive(nodeHandler.advertiseService(service_set_thrust, &Crazyflie::setThrust, this))
             , controller(nodeHandler.advertise<geometry_msgs::Twist>(prefix + topic_control, topic_control_buffer_size)){
 
         }
