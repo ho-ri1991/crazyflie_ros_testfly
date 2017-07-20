@@ -62,6 +62,7 @@ namespace testfly{
             crazyflie_driver::LogBlock logBlock;
             logBlock.topic_name = topic_zranger;
             logBlock.frequency = topic_zranger_frequency;
+            logBlock.variables = std::vector<std::string>(1, log_variable_zranger);
             addReq.request.log_blocks.push_back(logBlock);
 
             if(addCrazyflieClient.call(addReq)){
